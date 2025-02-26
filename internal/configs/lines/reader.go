@@ -3,6 +3,8 @@ package lines
 import (
 	"embed"
 	"fmt"
+	"strconv"
+
 	"github.com/releaseband/golang-developer-test/internal/configs/reader"
 )
 
@@ -10,8 +12,17 @@ import (
 var lines embed.FS
 
 func parseLine(data []string) (*Line, error) {
-	// todo: implement me
-	return nil, nil
+	lineInts := make([]int, len(data))
+
+	for index, numStr := range data {
+		num, err := strconv.Atoi(numStr)
+		if err != nil {
+			return nil, err
+		}
+		lineInts[index] = num
+	}
+
+	return NewLine(lineInts), nil
 }
 
 func ReadLines() (Lines, error) {

@@ -1,6 +1,7 @@
 package paytable
 
 import (
+	"fmt"
 	"github.com/releaseband/golang-developer-test/internal/configs/symbols"
 )
 
@@ -17,6 +18,14 @@ func NewPayTable(symbolPayouts map[symbols.Symbol]Payout) *PayTable {
 }
 
 func (p *PayTable) Get(s symbols.Symbol, index int) (uint64, error) {
-	// todo: implement me
-	return 0, nil
+	payRow, ok := p.symbolPayouts[s]
+	if !ok {
+		return 0, fmt.Errorf("p.symbolPayouts[s]: this symbol '%d' does not exist", s)
+	}
+
+	if len(payRow) < index {
+		return 0, fmt.Errorf("does not exist index: %d", index)
+	}
+
+	return payRow[index], nil
 }
