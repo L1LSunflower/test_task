@@ -1,16 +1,12 @@
 package calculator
 
 import (
-	"fmt"
-
 	"github.com/releaseband/golang-developer-test/internal/configs/lines"
 	"github.com/releaseband/golang-developer-test/internal/configs/paytable"
 	"github.com/releaseband/golang-developer-test/internal/configs/symbols"
 	"github.com/releaseband/golang-developer-test/internal/game/win"
 )
 
-// WILD - специальный символ, который может заменить любой другой символ
-// он не имеет своего выигрыша, но может увеличить выигрыш за счет замены другого символа
 const WILD = symbols.Symbol(0)
 const skip = -1
 
@@ -24,28 +20,19 @@ func NewCalculator(lines lines.Lines, payTable *paytable.PayTable) *Calculator {
 }
 
 func (c *Calculator) Calculate(spinSymbols symbols.Reels) ([]win.Win, error) {
-	if len(spinSymbols) < 3 {
-		return nil, fmt.Errorf("spin symbols length less than 3, spinSymbols length: %d", len(spinSymbols))
-	}
-
 	var wins []win.Win
 
 	for lineNum := 0; lineNum < len(c.lines); lineNum++ {
-		var (
-			streak        = 0
-			streakSymbols []int
-		)
-
 		rowToCheck := c.getRow(spinSymbols, lineNum)
-		streakSymbols, streak = c.checkRow(rowToCheck)
+		streakSymbols, streak := c.checkRow(rowToCheck)
 
-		if streak == skip {
-			continue
-		}
-
-		amount, err := c.payTable.Get(streakSymbols[0], streak)
+		amount, err := c.payTable.Get(streakSymbols[0], streak-1)
 		if err != nil {
 			return wins, err
+		}
+
+		if amount == 0 {
+			continue
 		}
 
 		wins = append(wins, win.NewWin(amount, streakSymbols, streakSymbols[0]))
@@ -58,8 +45,8 @@ func (c *Calculator) getRow(symbols symbols.Reels, lineNum int) []int {
 	indices := c.lines[lineNum].GetIndices()
 	finalRow := make([]int, len(indices))
 
-	for col, row := range indices {
-		finalRow[col] = symbols[row][col]
+	for col, rowIndex := range indices {
+		finalRow[col] = symbols[col][rowIndex]
 	}
 
 	return finalRow
@@ -70,23 +57,31 @@ func (c *Calculator) checkRow(row symbols.Symbols) ([]int, int) {
 		return nil, skip
 	}
 
-	count := 1
-	pVal := row[0]
+	count := 0
+	pVal := -1
 
-	if pVal == WILD {
-		return nil, skip
-	}
-
-	for col := 1; col < len(row); col++ {
-		if pVal != row[col] && col == 1 && row[col] != WILD {
-			return nil, skip
-		}
-
-		if (pVal == row[col] || row[col] == WILD) && count == col {
+	// Count all leading WILDs
+	for col := 0; col < len(row); col++ {
+		if row[col] == WILD {
 			count++
+		} else {
+			pVal = row[col]
+			break
 		}
-
 	}
 
-	return row[:count], count - 1
+	if pVal == -1 {
+		return row[:count], count
+	}
+
+	// Count consecutive matching symbols or WILDs
+	for col := count; col < len(row); col++ {
+		if row[col] == pVal || row[col] == WILD {
+			count++
+		} else {
+			break
+		}
+	}
+
+	return row[:count], count
 }

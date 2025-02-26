@@ -1,7 +1,6 @@
 package calculator
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -12,151 +11,99 @@ import (
 	"github.com/releaseband/golang-developer-test/internal/game/win"
 )
 
-func TestCalculator_Calculate_V3_RealPayTable(t *testing.T) {
-	testLines, err := lines.ReadLines()
-	if err != nil {
-		t.Errorf("failed to read lines with error: %s", err)
-	}
+func TestCalculator_Calculate(t *testing.T) {
+	payTable := paytable.NewPayTable(map[symbols.Symbol]paytable.Payout{
+		1: []uint64{0, 0, 3, 4, 5},
+		2: []uint64{0, 0, 0, 6, 7},
+		3: []uint64{0, 0, 0, 0, 8},
+	})
 
-	realPayTable, err := paytable.ReadPayTable()
-	if err != nil {
-		panic(fmt.Sprintf("Failed to load real paytable: %v", err))
-	}
+	line1 := lines.NewLine([]int{0, 0, 0, 0, 0})
+	line2 := lines.NewLine([]int{1, 1, 1, 1, 1})
+	line3 := lines.NewLine([]int{2, 2, 2, 2, 2})
+
+	gamLines := lines.Lines{*line1, *line2, *line3}
+
+	calculator := NewCalculator(gamLines, payTable)
 
 	tests := []struct {
-		name          string
-		spinSymbols   symbols.Reels
-		expectedWins  []win.Win
-		expectedError bool
+		name        string
+		exp         []win.Win
+		spinSymbols symbols.Reels
 	}{
 		{
-			name: "Invalid spinSymbols - less than 3 rows",
-			spinSymbols: symbols.Reels{
-				{1, 2, 3, 4, 5},
-				{6, 7, 8, 9, 10},
+			name: "without win",
+			exp:  nil,
+			spinSymbols: []symbols.Symbols{
+				{3, 2, 1}, // 1 reel
+				{3, 2, 1}, // 2 reel
+				{3, 3, 3}, // 3 reel
+				{4, 4, 4}, // 4 reel
+				{4, 4, 4}, // 5 reel
 			},
-			expectedWins:  nil,
-			expectedError: true,
 		},
 		{
-			name: "No wins on any lines",
-			spinSymbols: symbols.Reels{
-				{1, 2, 3, 4, 5},
-				{6, 7, 8, 9, 10},
-				{11, 12, 13, 14, 15},
+			name: "win by 3",
+			spinSymbols: []symbols.Symbols{
+				{2, 3, 1}, // 1 reel
+				{2, 3, 1}, // 2 reel
+				{3, 3, 3}, // 3 reel
+				{4, 3, 4}, // 4 reel
+				{4, 3, 4}, // 5 reel
 			},
-			expectedWins:  []win.Win{},
-			expectedError: false,
+			exp: []win.Win{
+				win.NewWin(8, symbols.Symbols{3, 3, 3, 3, 3}, 3),
+			},
 		},
 		{
-			name: "Win on line 1 - 3 symbols of type 1 (based on pay_table.txt)",
-			spinSymbols: symbols.Reels{
-				{1, 1, 1, 4, 5},
-				{6, 7, 8, 9, 10},
-				{1, 2, 3, 4, 5},
+			name: "win by 2",
+			spinSymbols: []symbols.Symbols{
+				{2, 3, 1}, // 1 reel
+				{2, 3, 1}, // 2 reel
+				{2, 3, 3}, // 3 reel
+				{2, 6, 4}, // 4 reel
+				{4, 5, 4}, // 5 reel
 			},
-			expectedWins: []win.Win{
-				win.NewWin(50, []int{1, 1, 1}, 1),
+			exp: []win.Win{
+				win.NewWin(6, symbols.Symbols{2, 2, 2, 2}, 2),
 			},
-			expectedError: false,
 		},
 		{
-			name: "Win on line 2 - 4 symbols of type 2 (based on pay_table.txt)",
-			spinSymbols: symbols.Reels{
-				{1, 2, 3, 4, 5},
-				{2, 2, 2, 2, 10},
-				{1, 2, 3, 4, 5},
+			name: "win by 1 and 2",
+			spinSymbols: []symbols.Symbols{
+				{2, 3, 1}, // 1 reel
+				{2, 3, 1}, // 2 reel
+				{2, 3, 1}, // 3 reel
+				{2, 6, 7}, // 4 reel
+				{2, 5, 9}, // 5 reel
 			},
-			expectedWins: []win.Win{
-				win.NewWin(200, []int{2, 2, 2, 2}, 2),
+			exp: []win.Win{
+				win.NewWin(7, symbols.Symbols{2, 2, 2, 2, 2}, 2),
+				win.NewWin(3, symbols.Symbols{1, 1, 1}, 1),
 			},
-			expectedError: false,
 		},
 		{
-			name: "Win on line 3 - 5 symbols of type 3 (based on pay_table.txt)",
-			spinSymbols: symbols.Reels{
-				{1, 2, 3, 4, 5},
-				{6, 7, 8, 9, 10},
-				{3, 3, 3, 3, 3},
+			name: "win by 1,2,3",
+			spinSymbols: []symbols.Symbols{
+				{2, 3, 1}, // 1 reel
+				{2, 3, 1}, // 2 reel
+				{2, 3, 1}, // 3 reel
+				{2, 3, 1}, // 4 reel
+				{2, 3, 1}, // 5 reel
 			},
-			expectedWins: []win.Win{
-				win.NewWin(200, []int{3, 3, 3, 3, 3}, 3),
+			exp: []win.Win{
+				win.NewWin(7, symbols.Symbols{2, 2, 2, 2, 2}, 2),
+				win.NewWin(8, symbols.Symbols{3, 3, 3, 3, 3}, 3),
+				win.NewWin(5, symbols.Symbols{1, 1, 1, 1, 1}, 1),
 			},
-			expectedError: false,
-		},
-		{
-			name: "Win on line 4 - Diagonal line win - 3 symbols of type 7 (based on pay_table.txt)",
-			spinSymbols: symbols.Reels{
-				{7, 2, 3, 4, 1},
-				{6, 7, 8, 9, 10},
-				{1, 2, 7, 4, 5},
-			},
-			expectedWins: []win.Win{
-				win.NewWin(10, []int{7, 7, 7}, 7),
-			},
-			expectedError: false,
-		},
-		{
-			name: "Win on line 5 - Another diagonal line win - 3 symbols of type 6 (based on pay_table.txt)",
-			spinSymbols: symbols.Reels{
-				{1, 6, 7, 4, 1},
-				{6, 7, 6, 9, 10},
-				{7, 2, 3, 4, 6},
-			},
-			expectedWins: []win.Win{
-				win.NewWin(10, []int{7, 7, 7}, 7),
-			},
-			expectedError: false,
-		},
-		{
-			name: "Wins on multiple lines - lines 1 and 2 (based on pay_table.txt)",
-			spinSymbols: symbols.Reels{
-				{1, 1, 1, 4, 5},
-				{2, 2, 2, 2, 10},
-				{1, 2, 3, 4, 5},
-			},
-			expectedWins: []win.Win{
-				win.NewWin(50, []int{1, 1, 1}, 1),
-				win.NewWin(200, []int{2, 2, 2, 2}, 2),
-			},
-			expectedError: false,
-		},
-		{
-			name: "Win on line 1 with WILD - 3 symbols of type 1 (1, 1, 0) (based on pay_table.txt)",
-			spinSymbols: symbols.Reels{
-				{1, 1, 0, 4, 5},
-				{6, 7, 8, 9, 10},
-				{1, 2, 3, 4, 5},
-			},
-			expectedWins: []win.Win{
-				win.NewWin(50, []int{1, 1, 0}, 1),
-			},
-			expectedError: false,
-		},
-		{
-			name: "No win - WILD not helping to form a win",
-			spinSymbols: symbols.Reels{
-				{5, 1, 0, 3, 4},
-				{6, 7, 8, 9, 10},
-				{1, 2, 3, 4, 5},
-			},
-			expectedWins:  []win.Win{},
-			expectedError: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			calc := NewCalculator(testLines, realPayTable)
-			wins, err := calc.Calculate(tt.spinSymbols)
-
-			if tt.expectedError {
-				require.Error(t, err, "Expected error but got nil")
-			} else {
-				require.NoError(t, err, "Unexpected error")
-			}
-
-			require.ElementsMatch(t, tt.expectedWins, wins, "Wins mismatch")
+			got, err := calculator.Calculate(tt.spinSymbols)
+			require.NoError(t, err)
+			require.Equal(t, tt.exp, got)
 		})
 	}
 }
