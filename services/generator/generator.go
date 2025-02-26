@@ -17,19 +17,19 @@ func NewSymbols(rowsCount int, gameTapes []symbols.Symbols) *Symbols {
 func (s *Symbols) Generate(rng rng.RNG) (symbols.Reels, error) {
 	const numberOfReels = 5
 
-	gameField := make(symbols.Reels, s.rowsCount)
+	gameField := make(symbols.Reels, numberOfReels)
 	for i := range gameField {
-		gameField[i] = make([]int, numberOfReels)
+		gameField[i] = make([]int, s.rowsCount)
 	}
 
 	for colI := 0; colI < numberOfReels; colI++ {
 		symbolTape := s.gameTapes[colI]
 
-		startIndex := rng.Random(0, uint32(len(symbolTape)))
+		startIndex := rng.Random(0, uint32(len(symbolTape)-1))
 		reelColumnSymbols := s.GetReelSymbols(colI, int(startIndex))
 
 		for rowI := 0; rowI < s.rowsCount; rowI++ {
-			gameField[rowI][colI] = reelColumnSymbols[rowI]
+			gameField[colI][rowI] = reelColumnSymbols[rowI]
 		}
 	}
 
