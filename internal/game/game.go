@@ -33,12 +33,7 @@ func (s *Slot) Spin(rng rng.RNG) (*result.Round, error) {
 		return nil, fmt.Errorf("failed to calculate wins: %w", err)
 	}
 
-	var totalWinAmount uint64 = 0
-	for _, calcRes := range calculationResult {
-		totalWinAmount += calcRes.Amount()
-	}
-
-	return result.NewRound(gameField, calculationResult, totalWinAmount), nil
+	return result.NewRound(gameField, calculationResult, s.roundCost), nil
 }
 
 func (s *Slot) RoundCost() uint64 {
