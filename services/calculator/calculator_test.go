@@ -1,12 +1,14 @@
 package calculator
 
 import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+
 	"github.com/releaseband/golang-developer-test/internal/configs/lines"
 	"github.com/releaseband/golang-developer-test/internal/configs/paytable"
 	"github.com/releaseband/golang-developer-test/internal/configs/symbols"
 	"github.com/releaseband/golang-developer-test/internal/game/win"
-	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestCalculator_Calculate(t *testing.T) {

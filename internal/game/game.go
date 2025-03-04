@@ -1,6 +1,8 @@
 package game
 
 import (
+	"fmt"
+
 	"github.com/releaseband/golang-developer-test/internal/game/result"
 	"github.com/releaseband/golang-developer-test/internal/rng"
 )
@@ -21,8 +23,17 @@ func newSlot(generator Generator, calculator Calculator, roundCost uint64) *Slot
 }
 
 func (s *Slot) Spin(rng rng.RNG) (*result.Round, error) {
-	// todo: implement me
-	return nil, nil
+	gameField, err := s.generator.Generate(rng)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate game field: %w", err)
+	}
+
+	calculationResult, err := s.calculator.Calculate(gameField)
+	if err != nil {
+		return nil, fmt.Errorf("failed to calculate wins: %w", err)
+	}
+
+	return result.NewRound(gameField, calculationResult, s.roundCost), nil
 }
 
 func (s *Slot) RoundCost() uint64 {
